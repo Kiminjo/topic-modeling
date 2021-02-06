@@ -8,9 +8,8 @@ Created on Wed Jan 27 15:09:05 2021
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from gensim.parsing.preprocessing import STOPWORDS
 from tqdm import tqdm
-
-
 
 
 class Text_preprocessing :
@@ -25,58 +24,82 @@ class Text_preprocessing :
     5. stemming and lemmatization
     """""""""""""""""""""
     
-    def __init__(self, corpus_list):
+    def __init__(self, corpus):
         # fill null space to 'nan'
-        self.corpus_list = corpus_list
+        self.corpus_list = corpus
         self.punctuations = '''!()-[]{};:'"\,<>./?@#$%^&*_~'''
-        self.url_stopwords = ['www', 'org', 'com', 'http', 'https']
+        self.pre_defined_stopwords = ['www', 'org', 'com', 'http', 'https', 'nbsp', 'pdf', 'license', 
+                                      'licensed', 'ab ', 'ipynb', 'github', 'import']
         
 
-    def tokenize(self) :
+    def tokenize(self, corpus_list) :
         # text tokenize using nltk
-        tokenized_corpus = [word_tokenize(corpus) for corpus in self.corpus_list]
+        tokenized_corpus = [word_tokenize(corpus) for corpus in corpus_list]
+        print('\n tokenize complete ')
+        
         return tokenized_corpus
     
-    def text_preprocessing(self) :
+    def discard_puctuation(self, corpus_list) :
+        # discard punctuation that pre defined
+        # predefined punctuations''!()-[]{};:'"\,<>./?@#$%^&*_~''
+        # capitalization of words
+        remove_punctuation = [[text.lower() for text in corpus if text not in self.punctuations] for corpus in tqdm(corpus_list)]
+        print('\n remove puctuation complete ')
+        
+        return remove_punctuation
+        
+    def remove_stopwords(self, corpus_list) :
+        # remove stopwords
+        # remove stopwords using nltk and gensim library's stopwords method
+        # text that have under 2 length will be stopwords, so remove
+        # 'if' can be used up to two times in one loop, so proceed in two separate ways.
+        remove_stopword = [[text for text in corpus if text not in STOPWORDS if text not in stopwords.words('english')] 
+                            for corpus in tqdm(corpus_list)]
+        print('\n remove stopwords process1 complete ')
+        
+        remove_stopword = [[text for text in corpus if text not in self.pre_defined_stopwords if len(text) > 2] 
+                           for corpus in tqdm(remove_stopword)]
+        print('\n remove stopwords process2 complete')
+        
+        return remove_stopword
+    
+    def lemmatization(self, corpus_list) :
         # lemmatizer method call
         lemm = WordNetLemmatizer()
         
-        # get result of tokenize function
-        corpus_list = self.tokenize()
-        
-        # * discard punctuation
-        #   predefined punctuations''!()-[]{};:'"\,<>./?@#$%^&*_~''
-        # * capitalization of words
-        # * remove stopwords
-        #   remove stopwords using nltk library's stopwords method
-        #   text that have under 2 length will be stopwords, so remove
-        processed_text = [[lemm.lemmatize(text.lower()) for text in corpus if text not in self.punctuations 
-                          if text not in stopwords.words('english') if text not in self.url_stopwords if len(text) > 2] 
-                          for corpus in tqdm(corpus_list)]
+        processed_text = [[lemm.lemmatize(text) for text in corpus] for corpus in tqdm(corpus_list)]
+        print('\n text preprocessing complete ')
                         
-
         return processed_text
+    
+    def text_processing(self) :
+        
+        tokenized = self.tokenize(self.corpus_list)
+        discard_punct = self.discard_puctuation(tokenized)
+        remove_stopword = self.remove_stopwords(discard_punct)
+        self.result = self.lemmatization(remove_stopword)        
+        
+        return self.result
+            
 
         
-
-
-
 class GitHub_preprocessing :
     
     def __init__(self, data) : 
         
         self.data = data
+        self.columns = ['owner', 'repo', 'readme', 'topics']
     
-    def filter(self) :
-        """
-        Consider only repo with 4 or more stars, forks and wath
-        Not use 
-        """
-        event_threshold = 100
-        filtered_data = self.data[(self.data['watchers_count']>event_threshold) & (self.data['stargazers_count']>event_threshold) 
-                                  & (self.data['forks_count']>event_threshold)]
-    
-        return filtered_data
+    """""""""""""""""
+    data preprocessing in specific condition
+    """""""""""""""""
+    # repo preprocessing
+    def repo_filtering(self) :
+        
+        self.data['readme_length'] = [len(str(text)) for text in self.data['readme']]
+        self.data = self.data[(self.data['readme_length'] > 2200) & (self.data['owner_type']=='Organization')][self.necessary_columns]
+            
+        return self.data
     
     def split_words(self, column_name) :
         """
