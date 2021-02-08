@@ -29,7 +29,8 @@ class Text_preprocessing :
         self.corpus_list = corpus
         self.punctuations = '''!()-[]{};:'"\,<>./?@#$%^&*_~'''
         self.pre_defined_stopwords = ['www', 'org', 'com', 'http', 'https', 'nbsp', 'pdf', 'license', 
-                                      'licensed', 'ab ', 'ipynb', 'github', 'import']
+                                      'licensed', 'ab ', 'ipynb', 'badge', 'shield', 'svg'
+                                      '2016', '2017', '2018', '2019', '2020']
         
 
     def tokenize(self, corpus_list) :
@@ -57,7 +58,7 @@ class Text_preprocessing :
                             for corpus in tqdm(corpus_list)]
         print('\n remove stopwords process1 complete ')
         
-        remove_stopword = [[text for text in corpus if text not in self.pre_defined_stopwords if len(text) > 2] 
+        remove_stopword = [[text for text in corpus if text not in self.pre_defined_stopwords if len(text) > 3] 
                            for corpus in tqdm(remove_stopword)]
         print('\n remove stopwords process2 complete')
         
